@@ -43,7 +43,7 @@ app.post('/upload', upload.single('avatar'), async (req, res) => {
 
   res.json({
     message: 'Successfully',
-    // data: dataUrl,
+    data: dataUrl,
   });
 });
 
