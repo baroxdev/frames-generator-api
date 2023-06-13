@@ -35,7 +35,7 @@ app.post('/upload', upload.single('avatar'), async (req, res) => {
 
   ctx.font = font;
   drawText(ctx, req.body.text || 'Xin chào', 130, 400, maxWidthText, maxHeightText);
-  const dataUrl = canvas.toBuffer('image/jpeg');
+  const dataUrl = canvas.toDataURL('image/jpeg');
   const out = fs.createWriteStream('./storage/test.jpeg');
   const stream = canvas.createJPEGStream();
   stream.pipe(out);
