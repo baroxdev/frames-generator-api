@@ -12,29 +12,82 @@ registerFont('./storage/roboto/roboto-viet-hoa_095802/Roboto-Bold.ttf', {
 });
 
 app.post('/upload', upload.single('avatar'), async (req, res) => {
-  // const avatar = await loadImage(req.file.buffer)
-  let avatar = await Jimp.read(req.file.buffer);
-  avatar.cover(476, 475);
-  avatar.circle(10000);
-  const background = await loadImage('./storage/background.jpg');
+  // Configure
+  const avatarX = 165;
+  const avatarY = 407;
+  const avatarSize = 463;
+  const maxWidthText = 980;
+  const maxHeightText = 920;
+  const textX = 840;
+  const textY = 480;
+  const maxWidthFullName = 442;
+  const maxHeightFullName = 71;
+  const fullNameX = 177;
+  const fullNameY = 910;
+  const maxWidthRole = 527;
+  const maxHeightRole = 56;
+  const roleX = 139;
+  const roleY = 980;
+  const background = await loadImage('./storage/background.png');
   const canvas = createCanvas(background.width, background.height);
   const ctx = canvas.getContext('2d');
-  const backgroundImage = new Image();
-  const maxWidthText = 1100;
-  const maxHeightText = 1000;
+  const avatarImage = new Image();
   const fonts = {
+    sm: '30px "RobotoBold"',
     md: '40px "RobotoBold"',
     lg: '50px "RobotoBold"',
   };
-  const font = req.body.text.length <= 300 ? fonts.lg : fonts.md;
-  backgroundImage.src = await avatar.getBufferAsync(Jimp.MIME_PNG);
+
+  // Form data
+  const text = req.body.text || 'Thông điệp của bạn...';
+  const fullName = req.body.full_name || 'Tên của bạn...';
+  const role = req.body.role || 'Vai trò của bạn...';
+  const font = text.length <= 300 ? fonts.lg : fonts.md;
+  const fullNameFont =
+    fullName.length <= 14 ? fonts.lg : fullName.length <= 18 ? fonts.md : fonts.sm;
+  const roleFont = fullName.length <= 14 ? fonts.lg : fullName.length <= 18 ? fonts.md : fonts.sm;
+
+  let avatar = null;
+  try {
+    avatar = await Jimp.read(req.file.buffer);
+    avatar.cover(avatarSize, avatarSize);
+    avatar.circle(10000);
+    avatar.crop(0, 0, avatarSize, avatarSize - 36);
+  } catch (error) {
+    console.log(error);
+  }
+
+  console.log('🚀 ~ file: index.js:44 ~ app.post ~ fullName:', fullName);
+  console.log('🚀 ~ file: index.js:46 ~ app.post ~ role:', role);
 
   ctx.drawImage(background, 0, 0);
-  ctx.drawImage(backgroundImage, 1353, 376);
-  ctx.fillStyle = '#121f75';
+  if (avatar) {
+    avatarImage.src = await avatar.getBufferAsync(Jimp.MIME_PNG);
+    ctx.drawImage(avatarImage, avatarX, avatarY);
+  }
 
+  ctx.fillStyle = '#121f75';
   ctx.font = font;
-  drawText(ctx, req.body.text || 'Xin chào', 130, 400, maxWidthText, maxHeightText);
+  drawText(ctx, text, textX, textY, maxWidthText, maxHeightText);
+
+  ctx.fillStyle = 'transparent';
+  ctx.fillRect(fullNameX, fullNameY, maxWidthFullName, maxHeightFullName);
+
+  ctx.font = fullNameFont;
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'center';
+  ctx.fillText(fullName, fullNameX + maxWidthFullName / 2, fullNameY);
+
+  ctx.fillStyle = 'transparent';
+  ctx.fillRect(roleX, roleY, maxWidthRole, maxHeightRole);
+
+  ctx.font = roleFont;
+  ctx.fillStyle = '#121f75';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'center';
+  ctx.fillText(role, roleX + maxWidthRole / 2, roleY);
+
   const dataUrl = canvas.toDataURL('image/jpeg');
   const out = fs.createWriteStream('./storage/test.jpeg');
   const stream = canvas.createJPEGStream();
