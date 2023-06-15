@@ -1,6 +1,7 @@
 import { Image, createCanvas, loadImage, registerFont } from 'canvas';
 import express from 'express';
 import Jimp from 'jimp';
+import cors from 'cors';
 import multer, { memoryStorage } from 'multer';
 import compression from 'compression';
 import { storage, storageRef } from './firebase.js';
@@ -9,6 +10,10 @@ import imagemin from 'imagemin';
 import imageminOptipng from 'imagemin-optipng';
 import imageminPngquant from 'imagemin-pngquant';
 import imageminMozjpeg from 'imagemin-mozjpeg';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 const app = express();
 const upload = multer({ dest: 'upload/', storage: memoryStorage() });
 registerFont('./storage/roboto/roboto-viet-hoa_095802/Roboto-Bold.ttf', {
@@ -16,6 +21,11 @@ registerFont('./storage/roboto/roboto-viet-hoa_095802/Roboto-Bold.ttf', {
   weight: 700,
 });
 
+app.use(
+  cors({
+    origin: '*',
+  })
+);
 app.use(compression());
 
 app.post('/upload', upload.single('avatar'), async (req, res) => {
@@ -96,7 +106,7 @@ app.post('/upload', upload.single('avatar'), async (req, res) => {
   const compressedImage = await imagemin.buffer(canvas.toBuffer(), {
     plugins: [
       imageminMozjpeg({
-        quality: 50,
+        quality: 60,
         progressive: true, // Enable progressive rendering
         fastCrush: true, // Use fast DCT methods (less accurate but faster)
       }),
@@ -106,8 +116,6 @@ app.post('/upload', upload.single('avatar'), async (req, res) => {
     contentType: 'image/jpeg',
   });
 
-  console.log({ snapshot });
-  console.log('Uploaded a blob or file!');
   const url = await getDownloadURL(imageRef);
   // const dataUrl = canvas.toDataURL('image/jpeg');
   // const out = fs.createWriteStream('./storage/test.jpeg');
