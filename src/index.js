@@ -1,16 +1,14 @@
 import { Image, createCanvas, loadImage, registerFont } from 'canvas';
-import express from 'express';
-import Jimp from 'jimp';
-import cors from 'cors';
-import multer, { memoryStorage } from 'multer';
 import compression from 'compression';
-import { storage, storageRef } from './firebase.js';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import express from 'express';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import imagemin from 'imagemin';
-import imageminOptipng from 'imagemin-optipng';
-import imageminPngquant from 'imagemin-pngquant';
 import imageminMozjpeg from 'imagemin-mozjpeg';
-import dotenv from 'dotenv';
+import Jimp from 'jimp';
+import multer, { memoryStorage } from 'multer';
+import { storage } from '../firebase.js';
 
 dotenv.config();
 
@@ -28,7 +26,7 @@ app.use(
 );
 app.use(compression());
 
-app.post('/upload', upload.single('avatar'), async (req, res) => {
+app.post('/api/upload', upload.single('avatar'), async (req, res) => {
   // Configure
   const avatarX = 165;
   const avatarY = 407;
@@ -159,3 +157,5 @@ function drawText(ctx, text, x, y, maxWidth, maxHeight) {
 }
 
 app.listen(9090, () => console.log('Server running on port 9090'));
+
+export default app;
