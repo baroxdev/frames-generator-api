@@ -1,15 +1,22 @@
 import { Image, createCanvas, loadImage, registerFont } from 'canvas';
 import express from 'express';
 import Jimp from 'jimp';
-import fs from 'fs';
 import multer, { memoryStorage } from 'multer';
-
+import compression from 'compression';
+import { storage, storageRef } from './firebase.js';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import imagemin from 'imagemin';
+import imageminOptipng from 'imagemin-optipng';
+import imageminPngquant from 'imagemin-pngquant';
+import imageminMozjpeg from 'imagemin-mozjpeg';
 const app = express();
 const upload = multer({ dest: 'upload/', storage: memoryStorage() });
 registerFont('./storage/roboto/roboto-viet-hoa_095802/Roboto-Bold.ttf', {
   family: 'RobotoBold',
   weight: 700,
 });
+
+app.use(compression());
 
 app.post('/upload', upload.single('avatar'), async (req, res) => {
   // Configure
@@ -57,9 +64,6 @@ app.post('/upload', upload.single('avatar'), async (req, res) => {
     console.log(error);
   }
 
-  console.log('🚀 ~ file: index.js:44 ~ app.post ~ fullName:', fullName);
-  console.log('🚀 ~ file: index.js:46 ~ app.post ~ role:', role);
-
   ctx.drawImage(background, 0, 0);
   if (avatar) {
     avatarImage.src = await avatar.getBufferAsync(Jimp.MIME_PNG);
@@ -88,15 +92,32 @@ app.post('/upload', upload.single('avatar'), async (req, res) => {
   ctx.textBaseline = 'center';
   ctx.fillText(role, roleX + maxWidthRole / 2, roleY);
 
-  const dataUrl = canvas.toDataURL('image/jpeg');
-  const out = fs.createWriteStream('./storage/test.jpeg');
-  const stream = canvas.createJPEGStream();
-  stream.pipe(out);
-  out.on('finish', () => console.log('The JPEG file was created.'));
+  const imageRef = ref(storage, 'images/' + req.file.originalname + '.jpg');
+  const compressedImage = await imagemin.buffer(canvas.toBuffer(), {
+    plugins: [
+      imageminMozjpeg({
+        quality: 50,
+        progressive: true, // Enable progressive rendering
+        fastCrush: true, // Use fast DCT methods (less accurate but faster)
+      }),
+    ],
+  });
+  const snapshot = await uploadBytes(imageRef, compressedImage, {
+    contentType: 'image/jpeg',
+  });
+
+  console.log({ snapshot });
+  console.log('Uploaded a blob or file!');
+  const url = await getDownloadURL(imageRef);
+  // const dataUrl = canvas.toDataURL('image/jpeg');
+  // const out = fs.createWriteStream('./storage/test.jpeg');
+  // const stream = canvas.createJPEGStream();
+  // stream.pipe(out);
+  // out.on('finish', () => console.log('The JPEG file was created.'));
 
   res.json({
     message: 'Successfully',
-    data: dataUrl,
+    url: url,
   });
 });
 
